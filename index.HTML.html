@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<title>ColorScope — Medidor de Color</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  background:#0b0b0d;
+  color:#f5f5f5;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+
+.app{
+  max-width:760px;
+  margin:auto;
+  min-height:100vh;
+  padding-bottom:30px;
+}
+
+header{
+  padding:18px 18px 10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+
+h1{
+  font-size:21px;
+  margin:0;
+}
+
+.sub{
+  color:#9b9ba3;
+  font-size:12px;
+  margin-top:3px;
+}
+
+button{
+  font:inherit;
+  border:0;
+  border-radius:12px;
+  padding:11px 14px;
+  background:#25252a;
+  color:#fff;
+  font-weight:650;
+  cursor:pointer;
+}
+
+button:active{
+  transform:scale(.98);
+}
+
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.camera{
+  position:relative;
+  margin:8px 12px 14px;
+  border-radius:20px;
+  overflow:hidden;
+  background:#151518;
+  aspect-ratio:3/4;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  background:#111;
+}
+
+canvas{
+  display:none;
+}
+
+.target{
+  position:absolute;
+  width:74px;
+  height:74px;
+  border:2px solid #fff;
+  border-radius:50%;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 0 1px #0008;
+  pointer-events:none;
+}
+
+.target:after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:5px;
+  height:5px;
+  background:#fff;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+}
+
+.status{
+  position:absolute;
+  left:12px;
+  bottom:12px;
+  padding:7px 10px;
+  border-radius:10px;
+  background:#0009;
+  font-size:12px;
+  pointer-events:none;
+}
+
+.controls{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  padding:0 12px;
+  margin-bottom:12px;
+}
+
+.primary{
+  background:#f3f3f3;
+  color:#111;
+}
+
+.wide{
+  grid-column:1/-1;
+}
+
+.swatch{
+  height:82px;
+  margin:0 12px 14px;
+  border-radius:16px;
+  display:flex;
+  align-items:flex-end;
+  padding:12px;
+  background:#17171b;
+  box-shadow:inset 0 0 0 1px #ffffff18;
+  transition:background .15s ease;
+}
+
+.hex{
+  font-size:18px;
+  font-weight:800;
+  text-shadow:0 1px 4px #000;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  padding:0 12px;
+}
+
+.card{
+  background:#17171b;
+  border:1px solid #29292f;
+  border-radius:15px;
+  padding:13px;
+}
+
+.label{
+  font-size:12px;
+  color:#a9a9b2;
+  margin-bottom:6px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.value{
+  font-size:17px;
+  font-weight:750;
+  word-break:break-word;
+}
+
+.precision{
+  margin:12px;
+  background:#111114;
+  border:1px solid #29292f;
+  border-radius:14px;
+  padding:12px;
+  font-size:12px;
+  color:#b8b8c0;
+  line-height:1.45;
+}
+
+.dot{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#62d68a;
+  margin-right:6px;
+}
+
+.history{
+  padding:0 12px;
+}
+
+.history h2{
+  font-size:15px;
+  margin:20px 0 9px;
+}
+
+.history-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#17171b;
+  border:1px solid #29292f;
+  border-radius:12px;
+  padding:10px;
+  margin-bottom:8px;
+}
+
+.mini{
+  width:36px;
+  height:36px;
+  border-radius:9px;
+  border:1px solid #ffffff22;
+  flex-shrink:0;
+}
+
+.small{
+  font-size:12px;
+  color:#aaa;
+}
+
+.note{
+  padding:0 14px;
+  color:#85858e;
+  font-size:11px;
+  line-height:1.4;
+}
+
+.error-box{
+  display:none;
+  margin:0 12px 12px;
+  padding:12px;
+  border-radius:14px;
+  background:#241518;
+  border:1px solid #54252b;
+  color:#ffb8bd;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.error-box.show{
+  display:block;
+}
+
+@media(max-width:430px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .controls{
+    grid-template-columns:1fr;
+  }
+
+  .wide{
+    grid-column:auto;
+  }
+
+  header{
+    align-items:flex-start;
+  }
+
+  header button{
+    white-space:nowrap;
+  }
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+<header>
+  <div>
+    <h1>ColorScope</h1>
+    <div class="sub">Medición de color con cámara</div>
+  </div>
+
+<button id="flip">↻ Cámara</button>
+
+</header>
+
+<div class="camera">
+
+<video
+ id="video"
+ autoplay
+ playsinline
+ muted
+ disablepictureinpicture> </video>
+
+<canvas id="canvas"></canvas>
+
+  <div class="target"></div>
+
+  <div class="status" id="status">
+    Cámara detenida
+  </div>
+
+</div>
+
+<div class="error-box" id="errorBox"></div>
+
+<div class="controls">
+
+  <button class="primary" id="start">
+    📷 Activar cámara
+  </button>
+
+  <button id="measure">
+    🎯 Medir ahora
+  </button>
+
+  <button class="wide" id="copy">
+    📋 Copiar medición
+  </button>
+
+</div>
+
+<div class="swatch" id="swatch">
+
+  <div class="hex" id="hex">
+    #------
+  </div>
+
+</div>
+
+<div class="grid">
+
+  <div class="card">
+    <div class="label">RGB</div>
+    <div class="value" id="rgb">—</div>
+  </div>
+
+  <div class="card">
+    <div class="label">CMYK</div>
+    <div class="value" id="cmyk">—</div>
+  </div>
+
+  <div class="card">
+    <div class="label">HSV</div>
+    <div class="value" id="hsv">—</div>
+  </div>
+
+  <div class="card">
+    <div class="label">HSL</div>
+    <div class="value" id="hsl">—</div>
+  </div>
+
+</div>
+
+<div class="precision">
+
+<b>Estado de medición</b> <br>
+
+<span class="dot"></span> <span id="quality">
+Esperando cámara. </span>
+
+  <br>
+
+Se promedian los píxeles de una pequeña zona alrededor del objetivo
+para reducir el ruido.
+
+Los valores dependen de la cámara, iluminación, exposición y
+procesamiento del teléfono.
+
+</div>
+
+<div class="history">
+
+  <h2>Mediciones guardadas</h2>
+
+  <div id="historyList"></div>
+
+</div>
+
+<p class="note">
+  CMYK se calcula matemáticamente desde RGB y no utiliza un perfil
+  de impresión ICC. Para medición profesional se necesita calibración
+  de cámara, perfil de color e iluminación controlada.
+</p>
+
+</div>
+
+<script>
+
+/* =========================================================
+   ELEMENTOS
+========================================================= */
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d", {
+  willReadFrequently:true
+});
+
+const statusEl = document.getElementById("status");
+const qualityEl = document.getElementById("quality");
+const errorBox = document.getElementById("errorBox");
+
+const startButton = document.getElementById("start");
+const measureButton = document.getElementById("measure");
+const flipButton = document.getElementById("flip");
+
+let stream = null;
+let facing = "environment";
+let running = false;
+let last = null;
+
+
+/* =========================================================
+   UTILIDADES
+========================================================= */
+
+function clamp(value,min=0,max=255){
+  return Math.max(min,Math.min(max,value));
+}
+
+
+function rgbToHex(r,g,b){
+
+  return "#" +
+    [r,g,b]
+    .map(v =>
+      Math.round(v)
+      .toString(16)
+      .padStart(2,"0")
+    )
+    .join("")
+    .toUpperCase();
+
+}
+
+
+/* =========================================================
+   RGB → HSV
+========================================================= */
+
+function rgbToHsv(r,g,b){
+
+  r/=255;
+  g/=255;
+  b/=255;
+
+  const max=Math.max(r,g,b);
+  const min=Math.min(r,g,b);
+  const d=max-min;
+
+  let h=0;
+
+  if(d!==0){
+
+    if(max===r){
+      h=60*((g-b)/d%6);
+    }
+
+    else if(max===g){
+      h=60*((b-r)/d+2);
+    }
+
+    else{
+      h=60*((r-g)/d+4);
+    }
+
+  }
+
+  if(h<0) h+=360;
+
+  const s=max===0 ? 0 : d/max*100;
+  const v=max*100;
+
+  return [h,s,v];
+
+}
+
+
+/* =========================================================
+   RGB → HSL
+========================================================= */
+
+function rgbToHsl(r,g,b){
+
+  r/=255;
+  g/=255;
+  b/=255;
+
+  const max=Math.max(r,g,b);
+  const min=Math.min(r,g,b);
+
+  let h=0;
+  let s=0;
+
+  const l=(max+min)/2;
+  const d=max-min;
+
+  if(d!==0){
+
+    s=d/(1-Math.abs(2*l-1));
+
+    if(max===r){
+      h=60*((g-b)/d%6);
+    }
+
+    else if(max===g){
+      h=60*((b-r)/d+2);
+    }
+
+    else{
+      h=60*((r-g)/d+4);
+    }
+
+  }
+
+  if(h<0) h+=360;
+
+  return [
+    h,
+    s*100,
+    l*100
+  ];
+
+}
+
+
+/* =========================================================
+   RGB → CMYK
+========================================================= */
+
+function rgbToCmyk(r,g,b){
+
+  r/=255;
+  g/=255;
+  b/=255;
+
+  const k=1-Math.max(r,g,b);
+
+  if(k>=0.999999){
+    return [0,0,0,100];
+  }
+
+  return [
+
+    (1-r-k)/(1-k)*100,
+    (1-g-k)/(1-k)*100,
+    (1-b-k)/(1-k)*100,
+    k*100
+
+  ];
+
+}
+
+
+function fmt(v){
+  return Number(v).toFixed(1);
+}
+
+
+/* =========================================================
+   MOSTRAR RESULTADO
+========================================================= */
+
+function setResult(r,g,b,auto=false){
+
+  r=Math.round(clamp(r));
+  g=Math.round(clamp(g));
+  b=Math.round(clamp(b));
+
+  const hex=rgbToHex(r,g,b);
+  const hsv=rgbToHsv(r,g,b);
+  const hsl=rgbToHsl(r,g,b);
+  const cmyk=rgbToCmyk(r,g,b);
+
+  last={
+    r,
+    g,
+    b,
+    hex,
+    hsv,
+    hsl,
+    cmyk,
+    time:new Date().toLocaleTimeString()
+  };
+
+  document.getElementById("hex").textContent=hex;
+
+  document.getElementById("rgb").textContent=
+    `${r} / ${g} / ${b}`;
+
+  document.getElementById("cmyk").textContent=
+    `${fmt(cmyk[0])}% / ${fmt(cmyk[1])}% / ${fmt(cmyk[2])}% / ${fmt(cmyk[3])}%`;
+
+  document.getElementById("hsv").textContent=
+    `${fmt(hsv[0])}° / ${fmt(hsv[1])}% / ${fmt(hsv[2])}%`;
+
+  document.getElementById("hsl").textContent=
+    `${fmt(hsl[0])}° / ${fmt(hsl[1])}% / ${fmt(hsl[2])}%`;
+
+  document.getElementById("swatch").style.background=hex;
+
+  qualityEl.textContent=
+    auto
+    ? "Medición en tiempo real activa."
+    : "Medición capturada.";
+
+}
+
+
+/* =========================================================
+   MOSTRAR ERROR
+========================================================= */
+
+function showError(message){
+
+  errorBox.textContent=message;
+  errorBox.classList.add("show");
+
+}
+
+
+function hideError(){
+
+  errorBox.textContent="";
+  errorBox.classList.remove("show");
+
+}
+
+
+/* =========================================================
+   COMPROBAR SOPORTE
+========================================================= */
+
+function checkCameraSupport(){
+
+  if(!navigator.mediaDevices ||
+     !navigator.mediaDevices.getUserMedia){
+
+    showError(
+      "Este navegador no permite acceder a la cámara desde esta página. " +
+      "Probá abrir ColorScope mediante HTTPS o desde localhost usando un navegador moderno."
+    );
+
+    startButton.disabled=true;
+
+    return false;
+
+  }
+
+  return true;
+
+}
+
+
+/* =========================================================
+   DETENER CÁMARA
+========================================================= */
+
+function stopCamera(){
+
+  if(stream){
+
+    stream.getTracks().forEach(track=>{
+      track.stop();
+    });
+
+    stream=null;
+
+  }
+
+  video.srcObject=null;
+  running=false;
+
+}
+
+
+/* =========================================================
+   ACTIVAR CÁMARA
+========================================================= */
+
+async function startCamera(){
+
+  hideError();
+
+  if(!checkCameraSupport()){
+    return;
+  }
+
+  startButton.disabled=true;
+
+  statusEl.textContent="Solicitando cámara...";
+  qualityEl.textContent="Esperando permiso de cámara...";
+
+  try{
+
+    stopCamera();
+
+    /*
+      Primero intentamos con la cámara solicitada.
+    */
+
+    let constraints={
+      audio:false,
+      video:{
+        facingMode:{
+          ideal:facing
+        },
+        width:{
+          ideal:1920
+        },
+        height:{
+          ideal:1080
+        }
+      }
+    };
+
+    try{
+
+      stream=await navigator.mediaDevices.getUserMedia(
+        constraints
+      );
+
+    }
+
+    catch(firstError){
+
+      /*
+        Algunos celulares/navegadores rechazan constraints
+        demasiado específicas. Segundo intento simple.
+      */
+
+      stream=await navigator.mediaDevices.getUserMedia({
+        video:true,
+        audio:false
+      });
+
+    }
+
+
+    video.srcObject=stream;
+
+    /*
+      Esperamos a que el navegador realmente tenga
+      datos de vídeo antes de marcar la cámara como activa.
+    */
+
+    await new Promise(resolve=>{
+
+      if(video.readyState>=2){
+        resolve();
+        return;
+      }
+
+      video.onloadedmetadata=()=>{
+        resolve();
+      };
+
+    });
+
+
+    await video.play();
+
+    running=true;
+
+    statusEl.textContent="Cámara activa";
+
+    qualityEl.textContent=
+      "Cámara activa. Apuntá al color y mantené el objetivo estable.";
+
+    startButton.textContent="⏹ Reiniciar cámara";
+
+  }
+
+  catch(error){
+
+    console.error("ColorScope camera error:",error);
+
+    running=false;
+
+    statusEl.textContent="No se pudo abrir la cámara";
+
+    let message="No se pudo acceder a la cámara.";
+
+    if(error.name==="NotAllowedError"){
+
+      message=
+        "El permiso de cámara fue rechazado. " +
+        "Permití el acceso a la cámara en los permisos del navegador " +
+        "y después volvé a tocar «Activar cámara».";
+
+    }
+
+    else if(error.name==="NotFoundError"){
+
+      message=
+        "No se encontró ninguna cámara disponible en este dispositivo.";
+
+    }
+
+    else if(error.name==="NotReadableError"){
+
+      message=
+        "La cámara está siendo utilizada por otra aplicación. " +
+        "Cerrá otras aplicaciones que estén usando la cámara e intentá nuevamente.";
+
+    }
+
+    else if(error.name==="SecurityError"){
+
+      message=
+        "El navegador bloqueó el acceso por seguridad. " +
+        "Abrí ColorScope mediante HTTPS o localhost.";
+
+    }
+
+    else{
+
+      message=
+        "Error de cámara: " +
+        (error.message || error.name || "desconocido");
+
+    }
+
+    showError(message);
+
+    qualityEl.textContent=
+      "Revisá el mensaje de error.";
+
+  }
+
+  finally{
+
+    startButton.disabled=false;
+
+  }
+
+}
+
+
+/* =========================================================
+   CAPTURA Y MEDICIÓN
+========================================================= */
+
+function sample(){
+
+  if(!running ||
+     !video.videoWidth ||
+     !video.videoHeight){
+
+    return false;
+
+  }
+
+  /*
+    Tomamos una pequeña imagen central.
+  */
+
+  const sampleSize=120;
+
+  canvas.width=sampleSize;
+  canvas.height=sampleSize;
+
+  const sourceX=
+    (video.videoWidth-sampleSize)/2;
+
+  const sourceY=
+    (video.videoHeight-sampleSize)/2;
+
+  try{
+
+    ctx.drawImage(
+      video,
+      sourceX,
+      sourceY,
+      sampleSize,
+      sampleSize,
+      0,
+      0,
+      sampleSize,
+      sampleSize
+    );
+
+  }
+
+  catch(error){
+
+    console.error("Error al capturar píxeles:",error);
+
+    return false;
+
+  }
+
+
+  const data=ctx.getImageData(
+    0,
+    0,
+    sampleSize,
+    sampleSize
+  ).data;
+
+
+  let rs=0;
+  let gs=0;
+  let bs=0;
+  let n=0;
+
+
+  /*
+    Zona central de 50 × 50 píxeles.
+
+    Esto evita tomar demasiado de los bordes
+    del objetivo.
+  */
+
+  for(let y=35;y<85;y++){
+
+    for(let x=35;x<85;x++){
+
+      const i=(y*sampleSize+x)*4;
+
+      rs+=data[i];
+      gs+=data[i+1];
+      bs+=data[i+2];
+
+      n++;
+
+    }
+
+  }
+
+
+  if(!n){
+    return false;
+  }
+
+
+  setResult(
+    rs/n,
+    gs/n,
+    bs/n,
+    true
+  );
+
+  return true;
+
+}
+
+
+/* =========================================================
+   GUARDAR HISTORIAL
+========================================================= */
+
+function save(){
+
+  if(!last){
+    return;
+  }
+
+  const list=JSON.parse(
+    localStorage.getItem("colorscope") || "[]"
+  );
+
+  list.unshift(last);
+
+  localStorage.setItem(
+    "colorscope",
+    JSON.stringify(list.slice(0,20))
+  );
+
+  renderHistory();
+
+}
+
+
+/* =========================================================
+   HISTORIAL
+========================================================= */
+
+function renderHistory(){
+
+  const list=JSON.parse(
+    localStorage.getItem("colorscope") || "[]"
+  );
+
+  const box=document.getElementById("historyList");
+
+  box.innerHTML="";
+
+
+  if(!list.length){
+
+    box.innerHTML=
+      '<div class="small">Todavía no hay mediciones guardadas.</div>';
+
+    return;
+
+  }
+
+
+  list.forEach((c,i)=>{
+
+    const el=document.createElement("div");
+
+    el.className="history-item";
+
+
+    const mini=document.createElement("div");
+
+    mini.className="mini";
+
+    mini.style.background=c.hex;
+
+
+    const info=document.createElement("div");
+
+    info.style.flex="1";
+
+    info.innerHTML=
+      `<b>${c.hex}</b>
+       <div class="small">
+         RGB ${c.r}/${c.g}/${c.b} · ${c.time}
+       </div>`;
+
+
+    const copyButton=document.createElement("button");
+
+    copyButton.textContent="Copiar";
+
+
+    copyButton.onclick=()=>{
+
+      copyText(formatMeasurement(c));
+
+    };
+
+
+    el.appendChild(mini);
+    el.appendChild(info);
+    el.appendChild(copyButton);
+
+    box.appendChild(el);
+
+  });
+
+}
+
+
+/* =========================================================
+   FORMATEAR MEDICIÓN
+========================================================= */
+
+function formatMeasurement(c){
+
+  return `${c.hex}
+RGB: ${c.r}, ${c.g}, ${c.b}
+CMYK: ${c.cmyk.map(fmt).join("%, ")}%
+HSV: ${c.hsv.map(fmt).join("°, ")}°
+HSL: ${c.hsl.map(fmt).join("°, ")}°`;
+
+}
+
+
+/* =========================================================
+   COPIAR AL PORTAPAPELES
+========================================================= */
+
+async function copyText(text){
+
+  try{
+
+    if(navigator.clipboard &&
+       navigator.clipboard.writeText){
+
+      await navigator.clipboard.writeText(text);
+
+      statusEl.textContent="Medición copiada";
+
+      setTimeout(()=>{
+
+        statusEl.textContent=
+          running
+          ? "Cámara activa"
+          : "Cámara detenida";
+
+      },1200);
+
+      return;
+
+    }
+
+  }
+
+  catch(error){
+
+    console.warn("Clipboard API no disponible:",error);
+
+  }
+
+  /*
+    Fallback para navegadores que no permiten Clipboard API.
+  */
+
+  window.prompt(
+    "Copiá la medición:",
+    text
+  );
+
+}
+
+
+/* =========================================================
+   BOTÓN ACTIVAR / REINICIAR
+========================================================= */
+
+startButton.onclick=async()=>{
+
+  if(running){
+
+    stopCamera();
+
+    statusEl.textContent="Cámara detenida";
+
+    qualityEl.textContent="Cámara detenida.";
+
+    startButton.textContent="📷 Activar cámara";
+
+    return;
+
+  }
+
+  await startCamera();
+
+};
+
+
+/* =========================================================
+   MEDIR MANUALMENTE
+========================================================= */
+
+measureButton.onclick=()=>{
+
+  if(!running){
+
+    statusEl.textContent=
+      "Primero activá la cámara.";
+
+    qualityEl.textContent=
+      "La cámara debe estar activa para medir.";
+
+    return;
+
+  }
+
+  if(sample()){
+
+    save();
+
+    statusEl.textContent="Color medido y guardado";
+
+  }
+
+};
+
+
+/* =========================================================
+   CAMBIAR CÁMARA
+========================================================= */
+
+flipButton.onclick=async()=>{
+
+  if(!navigator.mediaDevices ||
+     !navigator.mediaDevices.getUserMedia){
+
+    showError(
+      "El navegador no permite acceder a las cámaras."
+    );
+
+    return;
+
+  }
+
+  facing=
+    facing==="environment"
+    ? "user"
+    : "environment";
+
+
+  if(running){
+
+    await startCamera();
+
+  }
+
+};
+
+
+/* =========================================================
+   COPIAR MEDICIÓN ACTUAL
+========================================================= */
+
+document.getElementById("copy").onclick=()=>{
+
+  if(!last){
+
+    statusEl.textContent=
+      "Todavía no hay una medición.";
+
+    return;
+
+  }
+
+  copyText(
+    formatMeasurement(last)
+  );
+
+};
+
+
+/* =========================================================
+   INICIALIZACIÓN
+========================================================= */
+
+checkCameraSupport();
+
+renderHistory();
+
+
+/* =========================================================
+   MEDICIÓN AUTOMÁTICA
+
+   Se actualiza cada 700 ms.
+========================================================= */
+
+setInterval(()=>{
+
+  if(running){
+
+    sample();
+
+  }
+
+},700);
+
+
+/* =========================================================
+   LIMPIEZA AL SALIR
+========================================================= */
+
+window.addEventListener("pagehide",()=>{
+
+  stopCamera();
+
+});
+
+
+window.addEventListener("beforeunload",()=>{
+
+  stopCamera();
+
+});
+
+</script>
+
+</body>
+</html>
